@@ -4,10 +4,9 @@ import time
 import math
 import numpy as np
 import numpy.ma as ma
-from flask import Flask, send_file, render_template, Response
+from flask import Flask, send_file, render_template
 from datetime import datetime
 import os
-import multiprocessing
 
 BUZZER_PIN = 18
 app = Flask(__name__)
@@ -81,11 +80,19 @@ def new_arr_sort():
         else:
             old_face_arr[min_index] = 0
 
-def capture_frames():
-    global no_detect_count
-    global old_face_arr
-    global diff_face_count
-    global old_face_count
+@app.route('/')
+def main():
+    return render_template('index.html')
+
+@app.route('/video_feed')
+def video_feed():
+    global send_filename
+    if send_filename:
+        return send_file(send_filename, mimetype='image/jpg')
+    else:
+        return 'No Visitor'
+
+if __name__ == '__main__':
     while True:
         ret, img = cam.read()
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -126,28 +133,7 @@ def capture_frames():
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-def gen_frames():  # generate frame by frame from camera
-    while True:
-        success, frame = cam.read()  # read the camera frame
-        if not success:
-            break
-        else:
-            ret, buffer = cv
-        ret, buffer = cv2.imencode('.jpg', frame)
-        frame = buffer.tobytes()
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # concat frame one by one and show result
-
-@app.route('/video_feed')
-def video_feed():
-    return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
-
-if __name__ == '__main__':
-    p1 = multiprocessing.Process(target=app.run, kwargs={'host': '0.0.0.0', 'port': 7070, 'debug': True})
-    p1.start()
-    capture_frames()
-    p1.join()
+    GPIO.cleanup()
+    cam.release()
+    cv2.destroyAllWindows()
+    app.run(host='0.0.0.0', port=6060, debug=True)
