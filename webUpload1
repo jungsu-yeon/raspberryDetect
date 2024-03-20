@@ -54,7 +54,7 @@ def buzzer_on():
     time.sleep(0.5)
     GPIO.output(BUZZER_PIN, GPIO.LOW)
 
-def calc_dist(faces):
+def calc_dist(img, faces):  # 이미지 객체를 매개변수로 추가
     global send_filename
     new_face_arr.fill(0)
     if len(faces) > 4:
@@ -100,17 +100,18 @@ def capture_frames():
                 new_face_arr.fill(0)
                 all_dist_arr.fill(0)
         else:
-            print(f'faces={len(faces)}')
+            print(f'faces={len(faces
+))
             no_detect_count = 0
             print("old_face_arr = \n{}\n".format(old_face_arr))
             if current_face_count == old_face_count:
-                calc_dist(faces)
+                calc_dist(img, faces)  # 이미지 객체를 전달
                 new_arr_sort()
                 old_face_count = current_face_count
             else:
                 diff_face_count += 1
                 if diff_face_count > 5:
-                    calc_dist(faces)
+                    calc_dist(img, faces)  # 이미지 객체를 전달
                     diff_face_count = 0
                     if old_face_count == 0:
                         old_face_arr = new_face_arr.copy()
