@@ -7,6 +7,7 @@ import numpy.ma as ma
 from flask import Flask, send_file, render_template
 from datetime import datetime
 import os
+import asyncio
 
 BUZZER_PIN = 18
 app = Flask(__name__)
@@ -80,19 +81,11 @@ def new_arr_sort():
         else:
             old_face_arr[min_index] = 0
 
-@app.route('/')
-def main():
-    return render_template('index.html')
-
-@app.route('/video_feed')
-def video_feed():
-    global send_filename
-    if send_filename:
-        return send_file(send_filename, mimetype='image/jpg')
-    else:
-        return 'No Visitor'
-
-if __name__ == '__main__':
+async def capture_frames():
+    global no_detect_count
+    global old_face_arr
+    global diff_face_count
+    global old_face_count
     while True:
         ret, img = cam.read()
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -136,4 +129,19 @@ if __name__ == '__main__':
     GPIO.cleanup()
     cam.release()
     cv2.destroyAllWindows()
-    app.run(host='0.0.0.0', port=6060, debug=True)
+
+@app.route('/')
+def main():
+    return render_template('index.html')
+
+@app.route('/video_feed')
+def video_feed():
+    global send_filename
+    if send_filename:
+        return send_file(send_filename, mimetype='image/jpg')
+    else:
+        return 'No Visitor'
+
+if __name__ == '__main__':
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(asyncio.gather(run_flask(), capture_frames()))
