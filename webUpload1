@@ -3,7 +3,7 @@ import RPi.GPIO as GPIO
 import time
 import math
 import numpy as np
-from flask import Flask, Response
+from flask import Flask, Response, render_template
 
 BUZZER_PIN = 18
 
@@ -31,11 +31,14 @@ display_width = 800
 display_height = 480
 
 app = Flask(__name__)
+GPIO.setwarnings(False)
+
 
 def buzzer_on():
     GPIO.output(BUZZER_PIN, GPIO.HIGH)
     time.sleep(0.5)
     GPIO.output(BUZZER_PIN, GPIO.LOW)
+
 
 def detect_faces():
     while True:
@@ -78,6 +81,7 @@ def detect_faces():
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
+
 def calc_dist(faces):
     new_face_arr.fill(0)
     if len(faces) > 4:
@@ -100,6 +104,7 @@ def calc_dist(faces):
                                                   (new_face_arr[i][1] - old_face_arr[j][1]) ** 2), 1)
     print("all_dist_arr = \n{}\n".format(all_dist_arr))
 
+
 def new_arr_sort():
     min_index = 0
     for i, row in enumerate(all_dist_arr):
@@ -110,13 +115,16 @@ def new_arr_sort():
         else:
             old_face_arr[min_index] = 0
 
+
 @app.route('/')
 def index():
     return render_template('index.html')
 
+
 @app.route('/video_feed')
 def video_feed():
     return Response(detect_faces(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
 
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0')
