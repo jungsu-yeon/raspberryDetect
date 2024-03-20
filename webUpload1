@@ -128,3 +128,17 @@ def video_feed():
 
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0')
+
+///////////////////////////////
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Detection</title>
+</head>
+<body>
+    <h1>Face Detection</h1>
+    <img src="{{ url_for('video_feed') }}" width="800" height="480">
+</body>
+</html>
