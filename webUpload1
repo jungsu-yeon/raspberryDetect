@@ -38,6 +38,8 @@ current_time = now.strftime('%H-%M-%S')
 display_width = 800
 display_height = 480
 
+send_filename = ''  # send_filename 변수를 전역으로 설정
+
 def make_filename():
     visitor_folder = os.path.join('static','visitor', today)
     if not os.path.exists(visitor_folder):
