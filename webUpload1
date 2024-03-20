@@ -7,7 +7,7 @@ import numpy.ma as ma
 from flask import Flask, send_file, render_template
 from datetime import datetime
 import os
-import threading
+import multiprocessing
 
 BUZZER_PIN = 18
 app = Flask(__name__)
@@ -22,9 +22,9 @@ cam = cv2.VideoCapture(-1)
 cam.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
 cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
-new_face_arr = np.zeros((4,2))
-old_face_arr = np.zeros((4,2))
-all_dist_arr = np.zeros((4,4))
+new_face_arr = np.zeros((4, 2))
+old_face_arr = np.zeros((4, 2))
+all_dist_arr = np.zeros((4, 4))
 
 tracking_threshold = 50
 
@@ -36,123 +36,103 @@ now = datetime.now()
 today = now.strftime('%Y-%m-%d')
 current_time = now.strftime('%H-%M-%S')
 send_filename = ''
-display_width = 800  
+display_width = 800
 display_height = 480
 
+def run_flask():
+    app.run(host='0.0.0.0', port=6060, debug=True)
+
 def make_filename():
-    visitor_folder = os.path.join('static', 'visitor', today)
+    visitor_folder = os.path.join('visitor', today)
     if not os.path.exists(visitor_folder):
         os.makedirs(visitor_folder)
     filename = os.path.join(visitor_folder, f"{current_time}.jpg")
     return filename
-    
+
 def buzzer_on():
     GPIO.output(BUZZER_PIN, GPIO.HIGH)
     time.sleep(0.5)
-    GPIO.output(BUZZER_PIN, GPIO.LOW) 
-    
-def calc_dist(faces):
+    GPIO.output(BUZZER_PIN, GPIO.LOW)
+
+def calc_dist(img, faces):  # 이미지 객체를 매개변수로 추가
     global send_filename
     new_face_arr.fill(0)
-    
     if len(faces) > 4:
         faces = faces[:4]
     else:
-        for idx,(x,y,w,h) in enumerate(faces):
+        for idx, (x, y, w, h) in enumerate(faces):
             center_x = x + w // 2
             center_y = y + h // 2
-
             new_face_arr[idx][0] = center_x
             new_face_arr[idx][1] = center_y
-             
             cv2.rectangle(img, (x, y), (x+w, y+h), (0, 0, 255), 2)
             cv2.putText(img, f'{idx} : ({x+w//2}, {y+h//2})', (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
-            print("new_face_arr = \n{}\n".format(new_face_arr)) 
-            
+            print("new_face_arr = \n{}\n".format(new_face_arr))
             send_filename = make_filename()
             cv2.imwrite(send_filename, img)
-        
     for i in range(4):
         for j in range(4):
-            all_dist_arr[i][j] = round(math.sqrt((new_face_arr[i][0]-old_face_arr[j][0])**2+(new_face_arr[i][1]-old_face_arr[j][1])**2), 1)  
-    print("all_dist_arr = \n{}\n".format(all_dist_arr))   
-    
-    
+            all_dist_arr[i][j] = round(math.sqrt((new_face_arr[i][0]-old_face_arr[j][0])**2+(new_face_arr[i][1]-old_face_arr[j][1])**2), 1)
+    print("all_dist_arr = \n{}\n".format(all_dist_arr))
+
 def new_arr_sort():
     min_index = 0
     for i, row in enumerate(all_dist_arr):
         min_index = np.argmin(row)
-        
         if all_dist_arr[i][min_index] < tracking_threshold:
-            old_face_arr[min_index] = new_face_arr[i] 
+            old_face_arr[min_index] = new_face_arr[i]
         else:
-            old_face_arr[min_index] = 0 
-            
-def run_flask():
-    app.run(host='0.0.0.0', port=6060, debug=True)
-    
-@app.route('/')
-def main():
-    return render_template('index.html')
-    
-@app.route('/video_feed')
-def video_feed():
-    global send_filename
-    if send_filename:
-        return send_file(send_filename, mimetype='image/jpg')
-    else:
-        return 'No Visitor'
+            old_face_arr[min_index] = 0
+
+def capture_frames():
+    global no_detect_count
+    global old_face_arr
+    global diff_face_count
+    global old_face_count
+    while True:
+        ret, img = cam.read()
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        faces = cascade.detectMultiScale(gray, scaleFactor=1.5, minNeighbors=3, minSize=(10, 10))
+        current_face_count = len(faces)
+        if current_face_count == 0:
+            no_detect_count += 1
+            if no_detect_count > 30:
+                no_detect_count = 0
+                old_face_count = 0
+                old_face_arr.fill(0)
+                new_face_arr.fill(0)
+                all_dist_arr.fill(0)
+        else:
+            print(f'faces={len(faces)}')
+            no_detect_count = 0
+            print("old_face_arr = \n{}\n".format(old_face_arr))
+            if current_face_count == old_face_count:
+                calc_dist(img, faces)  # 이미지 객체를 전달
+                new_arr_sort()
+                old_face_count = current_face_count
+            else:
+                diff_face_count += 1
+                if diff_face_count > 5:
+                    calc_dist(img, faces)  # 이미지 객체를 전달
+                    diff_face_count = 0
+                    if old_face_count == 0:
+                        old_face_arr = new_face_arr.copy()
+                    else:
+                        new_arr_sort()
+                    if current_face_count > old_face_count:
+                        buzzer_on()
+                    old_face_count = current_face_count
+                print("old_face_count = \n{}\n".format(old_face_count))
+        cv2.namedWindow('Face Detection', cv2.WINDOW_NORMAL)
+        cv2.resizeWindow('Face Detection', display_width, display_height)
+        cv2.imshow('Face Detection', img)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
 if __name__ == '__main__':
-    flask_thread = threading.Thread(target=run_flask)
-    flask_thread.start()
-    
+    run_flask()
     try:
-        while True:
-            ret, img = cam.read()
-            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            faces = cascade.detectMultiScale(gray, scaleFactor=1.5, minNeighbors=3, minSize=(10, 10))
-            current_face_count = len(faces)
-
-            if current_face_count == 0:
-                no_detect_count += 1
-                if no_detect_count > 30:
-                    no_detect_count = 0
-                    old_face_count = 0
-                    old_face_arr.fill(0)
-                    new_face_arr.fill(0)
-                    all_dist_arr.fill(0)
-            else:
-                print(f'faces={len(faces)}')
-                no_detect_count = 0 
-                print("old_face_arr = \n{}\n".format(old_face_arr)) 
-                if current_face_count == old_face_count:
-                    calc_dist(faces)
-                    new_arr_sort() 
-                    old_face_count = current_face_count
-                else:
-                    diff_face_count += 1
-                    if diff_face_count > 5:
-                        calc_dist(faces)
-                        diff_face_count = 0
-                        if old_face_count == 0:
-                            old_face_arr = new_face_arr.copy()
-                        else:
-                            new_arr_sort() 
-
-                        if current_face_count > old_face_count:
-                            buzzer_on()
-                        old_face_count = current_face_count
-
-                    print("old_face_count = \n{}\n".format(old_face_count))
-
-            cv2.namedWindow('Face Detection', cv2.WINDOW_NORMAL)
-            cv2.resizeWindow('Face Detection', display_width, display_height)
-            cv2.imshow('Face Detection', img)
-
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-        
+        capture_frames()
     finally:
         print('end')
         GPIO.cleanup()
