@@ -35,12 +35,11 @@ no_detect_count = 0
 now = datetime.now()
 today = now.strftime('%Y-%m-%d')
 current_time = now.strftime('%H-%M-%S')
-send_filename = ''
 display_width = 800
 display_height = 480
 
 def make_filename():
-    visitor_folder = os.path.join('visitor', today)
+    visitor_folder = os.path.join('static','visitor', today)
     if not os.path.exists(visitor_folder):
         os.makedirs(visitor_folder)
     filename = os.path.join(visitor_folder, f"{current_time}.jpg")
@@ -53,6 +52,7 @@ def buzzer_on():
 
 def calc_dist(img, faces):  
     global send_filename
+    send_filename = make_filename()  # send_filename 업데이트
     new_face_arr.fill(0)
     if len(faces) > 4:
         faces = faces[:4]
@@ -65,8 +65,7 @@ def calc_dist(img, faces):
             cv2.rectangle(img, (x, y), (x+w, y+h), (0, 0, 255), 2)
             cv2.putText(img, f'{idx} : ({x+w//2}, {y+h//2})', (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
             print("new_face_arr = \n{}\n".format(new_face_arr))
-            send_filename = make_filename()
-            cv2.imwrite(send_filename, img)
+            cv2.imwrite(send_filename, img)  # 이미지 저장
     for i in range(4):
         for j in range(4):
             all_dist_arr[i][j] = round(math.sqrt((new_face_arr[i][0]-old_face_arr[j][0])**2+(new_face_arr[i][1]-old_face_arr[j][1])**2), 1)
@@ -86,6 +85,8 @@ def capture_frames():
     global old_face_arr
     global diff_face_count
     global old_face_count
+    global send_filename  # send_filename 전역 변수로 설정
+    
     while True:
         ret, img = cam.read()
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -137,6 +138,7 @@ def main():
 @app.route('/video_feed')
 def video_feed():
     global send_filename
+    
     if send_filename:
         return send_file(send_filename, mimetype='image/jpg')
     else:
