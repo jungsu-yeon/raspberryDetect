@@ -130,4 +130,10 @@ def capture_frames():
 
 if __name__ == '__main__':
     try:
-        threading.Thread(target=app.run, kwargs={'host': '0.0.0.0', 'port': 8080, '
+        threading.Thread(target=app.run, kwargs={'host': '0.0.0.0', 'port': 8080, 'debug': True}).start()
+        capture_frames()
+    finally:
+        print('end')
+        GPIO.cleanup()
+        cam.release()
+        cv2.destroyAllWindows()
