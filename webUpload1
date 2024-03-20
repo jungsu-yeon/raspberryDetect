@@ -87,6 +87,7 @@ def capture_frames():
     global old_face_arr
     global diff_face_count
     global old_face_count
+    global send_filename
     while True:
         ret, img = cam.read()
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -113,8 +114,7 @@ def capture_frames():
                 if diff_face_count > 5:
                     calc_dist(img, faces)  
                     diff_face_count = 0
-                    if
-                    old_face_count == 0:
+                    if old_face_count == 0:
                         old_face_arr = new_face_arr.copy()
                     else:
                         new_arr_sort()
@@ -150,3 +150,4 @@ if __name__ == '__main__':
     t1 = threading.Thread(target=capture_frames)
     t1.start()
     app.run(host='0.0.0.0', port=6060, debug=True)
+
