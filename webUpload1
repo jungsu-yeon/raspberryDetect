@@ -18,7 +18,7 @@ GPIO.setup(BUZZER_PIN, GPIO.OUT)
 cascade_xml = '/home/pi/rpi_edu-master/03multimedia/haarcascade_frontalface_default.xml'
 cascade = cv2.CascadeClassifier(cascade_xml)
 
-cam = cv2.VideoCapture(0)
+cam = cv2.VideoCapture(-1)
 cam.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
 cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
@@ -39,9 +39,6 @@ send_filename = ''
 display_width = 800
 display_height = 480
 
-def run_flask():
-    app.run(host='0.0.0.0', port=8080, debug=True)
-
 def make_filename():
     visitor_folder = os.path.join('visitor', today)
     if not os.path.exists(visitor_folder):
@@ -56,6 +53,7 @@ def buzzer_on():
 
 def calc_dist(img, faces):  # 이미지 객체를 매개변수로 추가
     global send_filename
+    global no_detect_count
     new_face_arr.fill(0)
     if len(faces) > 4:
         faces = faces[:4]
@@ -85,23 +83,26 @@ def new_arr_sort():
             old_face_arr[min_index] = 0
 
 def capture_frames():
-    global cam, app
+    global cam
     while True:
         ret, img = cam.read()
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         faces = cascade.detectMultiScale(gray, scaleFactor=1.5, minNeighbors=3, minSize=(10, 10))
         current_face_count = len(faces)
         if current_face_count == 0:
+            global no_detect_count
             no_detect_count += 1
             if no_detect_count > 30:
                 no_detect_count = 0
+                global old_face_count
                 old_face_count = 0
                 old_face_arr.fill(0)
                 new_face_arr.fill(0)
                 all_dist_arr.fill(0)
         else:
-            print(f'faces={len(faces
-))
+            print(f'faces={len(faces)}')
+            global old_face_count
+            global diff_face_count
             no_detect_count = 0
             print("old_face_arr = \n{}\n".format(old_face_arr))
             if current_face_count == old_face_count:
@@ -129,10 +130,4 @@ def capture_frames():
 
 if __name__ == '__main__':
     try:
-        threading.Thread(target=run_flask).start()
-        capture_frames()
-    finally:
-        print('end')
-        GPIO.cleanup()
-        cam.release()
-        cv2.destroyAllWindows()
+        threading.Thread(target=app.run, kwargs={'host': '0.0.0.0', 'port': 8080, '
