@@ -3,71 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Face Detection</title>
+    <title>Visitor Log</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             text-align: center;
             padding: 20px;
+            background-color: #f5f5f5;
         }
         h1 {
             margin-bottom: 20px;
+            color: #333;
         }
         .date-list {
             margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
         .date-list a {
             display: block;
             margin-bottom: 10px;
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+        .date-list a:hover {
+            background-color: #2980b9;
         }
     </style>
 </head>
 <body>
-    <h1>VISITOR</h1>
+    <h1>Visitor Log</h1>
     <div class="date-list">
         {% for date_folder in date_folders %}
             <a href="{{ url_for('show_images', date_folder=date_folder) }}">{{ date_folder }}</a>
-        {% endfor %}
-    </div>
-</body>
-</html>
-
-
-
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ date_folder }}</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding: 20px;
-        }
-        h1 {
-            margin-bottom: 20px;
-        }
-        .image-list {
-            margin-top: 20px;
-        }
-        .image-list img {
-            max-width: 100%;
-            height: auto;
-            display: block;
-            margin: 10px auto;
-            border: 1px solid #ccc;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-    </style>
-</head>
-<body>
-    <h1>{{ date_folder }}</h1>
-    <div class="image-list">
-        {% for image in images %}
-            <img src="{{ url_for('image', date_folder=date_folder, image=image) }}" alt="Face Detection Image">
         {% endfor %}
     </div>
 </body>
