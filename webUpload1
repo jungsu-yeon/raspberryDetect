@@ -13,35 +13,20 @@
         h1 {
             margin-bottom: 20px;
         }
-        img {
-            max-width: 100%;
-            height: auto;
-            display: block;
-            margin: 20px auto;
-            border: 1px solid #ccc;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        .date-list {
+            margin-top: 20px;
         }
-        .image-container {
-            margin-top: 50px;
+        .date-list a {
+            display: block;
+            margin-bottom: 10px;
         }
     </style>
 </head>
 <body>
     <h1>VISITOR</h1>
-    <p>Today: {{ today }}</p>
-    <p>Detect Time: {{ latest_image }}</p>
-
-    <!-- 날짜별 목록 -->
     <div class="date-list">
         {% for date_folder in date_folders %}
-            <a href="{{ url_for('show_images', date=date_folder) }}">{{ date_folder }}</a>
-        {% endfor %}
-    </div>
-
-    <!-- 이미지 표시 -->
-    <div class="image-container">
-        {% for image in images %}
-            <img src="{{ image }}" alt="Face Detection Image">
+            <a href="{{ url_for('show_images', date_folder=date_folder) }}">{{ date_folder }}</a>
         {% endfor %}
     </div>
 </body>
@@ -50,28 +35,40 @@
 
 
 
-
-
-from flask import Flask, render_template, send_file, url_for
-import os
-
-app = Flask(__name__)
-visitor_folder = 'static/visitor'
-
-@app.route('/')
-def main():
-    today = '2024-03-21'  # 오늘 날짜를 표시하도록 변경해야 합니다.
-    date_folders = os.listdir(visitor_folder)
-    latest_date_folder = date_folders[-1] if date_folders else None
-    images = []
-    if latest_date_folder:
-        latest_date_path = os.path.join(visitor_folder, latest_date_folder)
-        images = [url_for('show_images', date=latest_date_folder, filename=image) for image in os.listdir(latest_date_path)]
-    return render_template('index.html', today=today, date_folders=date_folders, images=images)
-
-@app.route('/show_images/<date>/<filename>')
-def show_images(date, filename):
-    return send_file(os.path.join(visitor_folder, date, filename), mimetype='image/jpeg')
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5050, debug=True)
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ date_folder }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        .image-list {
+            margin-top: 20px;
+        }
+        .image-list img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 10px auto;
+            border: 1px solid #ccc;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <h1>{{ date_folder }}</h1>
+    <div class="image-list">
+        {% for image in images %}
+            <img src="{{ url_for('image', date_folder=date_folder, image=image) }}" alt="Face Detection Image">
+        {% endfor %}
+    </div>
+</body>
+</html>
