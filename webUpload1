@@ -17,19 +17,36 @@
             max-width: 100%;
             height: auto;
             display: block;
-            margin: 0 auto;
+            margin: 20px auto;
             border: 1px solid #ccc;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .image-container {
+            margin-top: 50px;
         }
     </style>
 </head>
 <body>
-    <h1>Face Detection</h1>
+    <h1>VISITOR</h1>
     <p>Today: {{ today }}</p>
-    <p>Latest Image: {{ latest_image }}</p>
-    <img src="{{ url_for('video_feed') }}" alt="Face Detection Image">
+    <p>Detect Time: {{ latest_image }}</p>
+
+    <!-- 날짜별 목록 -->
+    <div class="date-list">
+        {% for date_folder in date_folders %}
+            <a href="{{ url_for('show_images', date=date_folder) }}">{{ date_folder }}</a>
+        {% endfor %}
+    </div>
+
+    <!-- 이미지 표시 -->
+    <div class="image-container">
+        {% for image in images %}
+            <img src="{{ image }}" alt="Face Detection Image">
+        {% endfor %}
+    </div>
 </body>
 </html>
+
 
 
 
